@@ -13,9 +13,9 @@ logger = logging.getLogger('app.py')
 
 
 async def track():
+    """Tracks changes in cluster."""
     cache = {}
     k8s_client = config.new_client_from_config()
-    i = 0
     while True:
         try:
             dyn_client = DynamicClient(k8s_client)
@@ -28,7 +28,6 @@ async def track():
                     logger.info(dc_info.to_dict())
                     logger.info(dc_info.__hash__())
                     cache[dc_info.name] = dc_info
-                    i += 1
                     await asyncio.sleep(2)
         except (client.rest.ApiException, exceptions.UnauthorizedError) as e:
             logger.info(e)
