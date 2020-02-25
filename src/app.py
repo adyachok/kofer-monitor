@@ -1,17 +1,15 @@
 #!/usr/bin/env python
-import logging
 import asyncio
 import os
 
-from kubernetes import client, config
-from openshift.dynamic import DynamicClient, exceptions
+from kubernetes import client
+from openshift.dynamic import exceptions
 
 from tracker import DeploymetConfigManager
+from utils.logger import get_logger
 
 
-FORMAT = '%(asctime)-15s %(message)s'
-logging.basicConfig(format=FORMAT, level=logging.INFO)
-logger = logging.getLogger('app.py')
+logger = get_logger('app')
 
 
 REQUEST_INTERVAL = os.getenv('ZZ_MONITOR_REQUEST_INTERVAL')

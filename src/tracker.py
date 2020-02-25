@@ -1,4 +1,3 @@
-import logging
 import os
 import time
 
@@ -6,9 +5,10 @@ from kubernetes import client, config
 from openshift.dynamic import DynamicClient, exceptions
 
 from dao import DeploymentConfigInfo, ImageTriggerInfo
+from utils.logger import get_logger
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('tracker.py')
+
+logger = get_logger('tracker')
 
 
 class DeploymetConfigManager:
