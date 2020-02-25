@@ -9,7 +9,8 @@ from openshift.dynamic import DynamicClient, exceptions
 from tracker import DeploymetConfigManager
 
 
-logging.basicConfig(level=logging.INFO)
+FORMAT = '%(asctime)-15s %(message)s'
+logging.basicConfig(format=FORMAT, level=logging.INFO)
 logger = logging.getLogger('app.py')
 
 
@@ -34,7 +35,7 @@ async def track():
                     logger.info(dc_info.to_dict())
                     # logger.info(dc_info.__hash__())
                     cache[dc_info.name] = dc_info
-                    await asyncio.sleep(REQUEST_INTERVAL)
+            await asyncio.sleep(REQUEST_INTERVAL)
     except (client.rest.ApiException, exceptions.UnauthorizedError) as e:
         logger.info(e)
 
