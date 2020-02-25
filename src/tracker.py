@@ -1,85 +1,22 @@
 import logging
+import os
 import time
 
 from kubernetes import client, config
 from openshift.dynamic import DynamicClient, exceptions
 
+from dao import DeploymentConfigInfo, ImageTriggerInfo
 
-class DeploymentConfigInfo:
-    __slots__ = ['name', 'image_triggers', 'latest_version']
-
-    def __init__(self, name, latest_version):
-        self.name = name
-        self.latest_version = latest_version
-        self.image_triggers = []
-
-    def __repr__(self):
-        return f'DeploymentConfigInfo(name={self.name}, ' \
-               f'latest_versiot={self.latest_version})'
-
-    def to_dict(self):
-        return {
-            'name': self.name,
-            'latest_version': self.latest_version,
-            'image_triggers': [trigger.to_dict() for trigger
-                               in self.image_triggers]
-        }
-
-    def has_image_change(self):
-        return any([trigger.is_image_change() for trigger
-                    in self.image_triggers])
-
-    def __eq__(self, other):
-        if self.name != other.name:
-            return False
-        # If there is no difference in sets
-        if not set(self.image_triggers).difference(other.image_triggers):
-            return True
-        return False
-
-    def prune(self):
-        # Remove not image change triggers
-        self.image_triggers = [trigger for trigger in self.image_triggers
-                               if trigger.is_image_change()]
-        return self
-
-    def __hash__(self):
-        return hash(repr(self))
-
-
-class ImageTriggerInfo:
-    __slots__ = ['image_name', 'trigger_type']
-
-    def __init__(self, image_name, trigger_type):
-        self.image_name = image_name
-        self.trigger_type = trigger_type
-
-    def __repr__(self):
-        return f'ImageTriggerInfo(image_name={self.image_name}, ' \
-               f'trigger_type={self.trigger_type})'
-
-    def is_image_change(self):
-        return self.trigger_type == 'ImageChange'
-
-    def to_dict(self):
-        return {
-            'image_name': self.image_name,
-            'trigger_type': self.trigger_type
-        }
-
-    def __eq__(self, other):
-        return self.image_name == other.image_name
-
-    def __hash__(self):
-        return hash(repr(self))
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('tracker.py')
 
 
 class DeploymetConfigManager:
     """Class handles connection to OpenShift and gets a list of deployment
     configs, then processes it into info objects.
     """
-    def __init__(self, client, namespace):
-        self.client = client
+    def __init__(self, namespace):
+        self.dyn_client = self.get_openshift_client()
         self.namespace = namespace
 
     def _get_deployment_configs_list(self):
@@ -88,7 +25,7 @@ class DeploymetConfigManager:
         :param namespace: OpenShift project name
         :return: DeploymentConfigList
         """
-        v1_delpoyment_config_list = self.client.resources.get(
+        v1_delpoyment_config_list = self.dyn_client.resources.get(
             api_version='v1', kind='DeploymentConfig')
         return v1_delpoyment_config_list.get(namespace=self.namespace)
 
@@ -143,16 +80,31 @@ class DeploymetConfigManager:
         info = self.filter_changes(info)
         return info
 
+    def get_openshift_client(self):
+        # Check if code is running in OpenShift
+        if "OPENSHIFT_BUILD_NAME" in os.environ:
+            config.load_incluster_config()
+            file_namespace = open(
+                "/run/secrets/kubernetes.io/serviceaccount/namespace", "r"
+            )
+            if file_namespace.mode == "r":
+                namespace = file_namespace.read()
+                logger.info("namespace: %s\n" % (namespace))
+        else:
+            config.load_kube_config()
+
+        # Create a client config
+        k8s_config = client.Configuration()
+        k8s_client = client.api_client.ApiClient(configuration=k8s_config)
+        return DynamicClient(k8s_client)
+
 
 if __name__ == '__main__':
     cache = {}
-    k8s_client = config.new_client_from_config()
     i = 0
     while (i < 10):
         try:
-            dyn_client = DynamicClient(k8s_client)
-            manager = DeploymetConfigManager(client=dyn_client,
-                                             namespace='zz-test')
+            manager = DeploymetConfigManager(namespace='zz-test')
             info = manager.track_changes()
             for dc_info in info:
                 cached = cache.get(dc_info.name)
