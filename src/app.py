@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import logging
 import asyncio
+import os
 
 from kubernetes import client, config
 from openshift.dynamic import DynamicClient, exceptions
@@ -12,25 +13,30 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('app.py')
 
 
+REQUEST_INTERVAL = os.getenv('ZZ_MONITOR_REQUEST_INTERVAL')
+REQUEST_INTERVAL = int(REQUEST_INTERVAL) if REQUEST_INTERVAL else 2
+NAMESPACE = os.getenv('NAMESPACE')
+if not NAMESPACE:
+    raise Exception('Environment variable NAMESPACE is not defined')
+
+
 async def track():
     """Tracks changes in cluster."""
     cache = {}
-    k8s_client = config.new_client_from_config()
-    while True:
-        try:
-            dyn_client = DynamicClient(k8s_client)
-            manager = DeploymetConfigManager(client=dyn_client,
-                                             namespace='zz-test')
+    try:
+        manager = DeploymetConfigManager(namespace=NAMESPACE)
+        while True:
+            logger.info('Checking the cluster state.')
             info = manager.track_changes()
             for dc_info in info:
                 cached = cache.get(dc_info.name)
                 if not cached or dc_info != cached:
                     logger.info(dc_info.to_dict())
-                    logger.info(dc_info.__hash__())
+                    # logger.info(dc_info.__hash__())
                     cache[dc_info.name] = dc_info
-                    await asyncio.sleep(2)
-        except (client.rest.ApiException, exceptions.UnauthorizedError) as e:
-            logger.info(e)
+                    await asyncio.sleep(REQUEST_INTERVAL)
+    except (client.rest.ApiException, exceptions.UnauthorizedError) as e:
+        logger.info(e)
 
 
 if __name__ == '__main__':
