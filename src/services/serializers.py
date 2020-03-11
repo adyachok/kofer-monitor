@@ -14,6 +14,7 @@ class DeploymentConfigInfoSerializer:
                             in self.deployment_config_info.image_triggers]
         )
 
+
 class ImageTriggerInfoSerializer:
 
     def __init__(self, image_trigger_info: dao.ImageTriggerInfo):
@@ -21,6 +22,6 @@ class ImageTriggerInfoSerializer:
 
     def __call__(self):
         return faust_dao.ImageTriggerInfo(
-            image_name = self.image_trigger_info.image_name,
-            trigger_type = self.image_trigger_info.trigger_type
+            image_name=self.image_trigger_info.image_name,
+            trigger_type=self.image_trigger_info.trigger_type
         )

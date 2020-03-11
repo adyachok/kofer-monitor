@@ -6,6 +6,7 @@ class ImageTriggerInfo(faust.Record):
     image_name: str
     trigger_type: str
 
+
 class DeploymentConfigInfo(faust.Record):
     name: str
     latest_version: int
