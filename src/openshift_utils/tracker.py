@@ -4,7 +4,7 @@ import time
 from kubernetes import client, config
 from openshift.dynamic import DynamicClient, exceptions
 
-from dao import DeploymentConfigInfo, ImageTriggerInfo
+from models.dao import DeploymentConfigInfo, ImageTriggerInfo
 from utils.logger import get_logger
 
 
@@ -52,6 +52,10 @@ class DeploymetConfigManager:
         parsed_data = []
         for item in deployment_config_list.get('items', []):
             dc_name = item.get('metadata').get('name')
+            # Select only model's deployment configs. Model deployment config
+            # name should start with 'mod-'
+            if not dc_name.startswith('mod-'):
+                continue
             _status = item.get('status', {})
             _details = _status.get('details', {})
             _causes = _details.get('causes', {})

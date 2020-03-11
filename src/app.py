@@ -1,42 +1,43 @@
 #!/usr/bin/env python
-import asyncio
-import os
+import faust
 
 from kubernetes import client
 from openshift.dynamic import exceptions
 
-from tracker import DeploymetConfigManager
+from config import Config
+from models.faust_dao import DeploymentConfigInfo
+from services.serializers import DeploymentConfigInfoSerializer
+from openshift_utils.tracker import DeploymetConfigManager
 from utils.logger import get_logger
 
 
 logger = get_logger('app')
 
-
-REQUEST_INTERVAL = os.getenv('ZZ_MONITOR_REQUEST_INTERVAL')
-REQUEST_INTERVAL = int(REQUEST_INTERVAL) if REQUEST_INTERVAL else 2
-NAMESPACE = os.getenv('NAMESPACE')
-if not NAMESPACE:
-    raise Exception('Environment variable NAMESPACE is not defined')
+config = Config()
 
 
-async def track():
-    """Tracks changes in cluster."""
-    cache = {}
+app = faust.App('monitor', broker=config.KAFKA_BROKER_URL, web_port=6067)
+topic = app.topic('model-updates', value_type=DeploymentConfigInfo)
+manager = DeploymetConfigManager(namespace=config.NAMESPACE)
+cache = {}
+
+
+@app.timer(interval=config.REQUEST_INTERVAL)
+async def monitor(app):
     try:
-        manager = DeploymetConfigManager(namespace=NAMESPACE)
-        while True:
-            logger.info('Checking the cluster state.')
-            info = manager.track_changes()
-            for dc_info in info:
-                cached = cache.get(dc_info.name)
-                if not cached or dc_info != cached:
-                    logger.info(dc_info.to_dict())
-                    # logger.info(dc_info.__hash__())
-                    cache[dc_info.name] = dc_info
-            await asyncio.sleep(REQUEST_INTERVAL)
+        logger.info('Checking the cluster state.')
+        info = manager.track_changes()
+        for dc_info in info:
+            cached = cache.get(dc_info.name)
+            if not cached or dc_info != cached:
+                logger.info(dc_info.to_dict())
+                cache[dc_info.name] = dc_info
+                await topic.send(
+                    value=DeploymentConfigInfoSerializer(dc_info)()
+                )
     except (client.rest.ApiException, exceptions.UnauthorizedError) as e:
         logger.info(e)
 
 
 if __name__ == '__main__':
-    asyncio.run(track())
+    app.main()

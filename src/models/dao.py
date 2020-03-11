@@ -8,7 +8,7 @@ class DeploymentConfigInfo:
 
     def __repr__(self):
         return f'DeploymentConfigInfo(name={self.name}, ' \
-               f'latest_versiot={self.latest_version})'
+               f'latest_version={self.latest_version})'
 
     def to_dict(self):
         return {
