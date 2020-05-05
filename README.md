@@ -27,7 +27,7 @@ modified - removed - rewritten accordingly to the needs of customer.
 #### Run locally
 
 
-To run locally application requires Kafka broker and MongoDB.
+To run locally application requires Kafka broker.
 
 To install seamlessly **Kafka** broker we recommend 
 [Kafka-docker](https://github.com/wurstmeister/kafka-docker) project. 
