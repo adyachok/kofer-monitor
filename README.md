@@ -45,7 +45,25 @@ We suggest to create next alias
     
   2. OpenShift token should be available inside container. Please, check the following
   link for more information [Service Accounts](https://docs.openshift.com/container-platform/3.11/dev_guide/service_accounts.html)
- 
+
+### Debugging
+
+We created instance of [Kafdrop](https://github.com/obsidiandynamics/kafdrop) with
+the aim to facilitate debugging process. The running example instance can be found
+in [BIX ZZ project](https://kafdrop-zz-test.22ad.bi-x.openshiftapps.com/)
+
+Kafdrop has reach interface which helps a lot in tracking messages / events.
+
+![alt text][kafdrop]
+
+[kafdrop]: img/kafdrop.png "Title"
+
+Yoiu can easily trace / read all messages in any topic:
+
+![alt text][kafdrop_read]
+
+[kafdrop_read]: img/kafdrop%202.png "Title"
+
  
 ### Useful links
 - [Access OpenShift API from pod container](https://developers.redhat.com/blog/2019/07/25/controlling-red-hat-openshift-from-an-openshift-pod/)
