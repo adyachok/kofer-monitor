@@ -1,7 +1,5 @@
 /* generated jenkins file used for building and deploying monitor in projects zz */
-def final projectId = 'zz'
-def final componentId = 'monitor'
-def final credentialsId = "${projectId}-cd-cd-user-with-password"
+
 def sharedLibraryRepository
 def dockerRegistry
 node {
